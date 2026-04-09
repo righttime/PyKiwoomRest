@@ -24,6 +24,6 @@ class ShortSellingAPI:
             end_dt: 종료일자 (YYYYMMDD)
         """
         return await self._client.get(
-            "/api/dostk/stkinfo", tr_id="ka10014",
+            "/api/dostk/shsa", tr_id="ka10014",
             stk_cd=stk_cd, strt_dt=strt_dt, end_dt=end_dt, **kw,
         )

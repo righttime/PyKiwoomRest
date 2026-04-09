@@ -1,4 +1,4 @@
-"""업종 정보 — /api/dostk/indtp"""
+"""업종 정보 — /api/dostk/sect"""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ class IndustryAPI:
         Args:
             stk_cd: 종목코드
         """
-        return await self._client.get("/api/dostk/indtp", tr_id="ka10010", stk_cd=stk_cd, **kw)
+        return await self._client.get("/api/dostk/sect", tr_id="ka10010", stk_cd=stk_cd, **kw)
 
     async def industry_investor_net_buy(
         self,
@@ -35,7 +35,7 @@ class IndustryAPI:
             stex_tp: 거래소구분 (1:KRX, 3:통합)
         """
         return await self._client.get(
-            "/api/dostk/indtp", tr_id="ka10051",
+            "/api/dostk/sect", tr_id="ka10051",
             mrkt_tp=mrkt_tp, amt_qty_tp=amt_qty_tp, stex_tp=stex_tp, **kw,
         )
 
@@ -49,7 +49,7 @@ class IndustryAPI:
             inds_cd: 업종코드 (001:종합KOSPI)
         """
         return await self._client.get(
-            "/api/dostk/indtp", tr_id="ka20001",
+            "/api/dostk/sect", tr_id="ka20001",
             mrkt_tp=mrkt_tp, inds_cd=inds_cd, **kw,
         )
 
@@ -67,7 +67,7 @@ class IndustryAPI:
             stex_tp: 거래소구분 (1:KRX, 3:통합)
         """
         return await self._client.get(
-            "/api/dostk/indtp", tr_id="ka20002",
+            "/api/dostk/sect", tr_id="ka20002",
             mrkt_tp=mrkt_tp, inds_cd=inds_cd, stex_tp=stex_tp, **kw,
         )
 
@@ -77,7 +77,7 @@ class IndustryAPI:
         Args:
             inds_cd: 업종코드 (001:종합KOSPI)
         """
-        return await self._client.get("/api/dostk/indtp", tr_id="ka20003", inds_cd=inds_cd, **kw)
+        return await self._client.get("/api/dostk/sect", tr_id="ka20003", inds_cd=inds_cd, **kw)
 
     async def industry_daily_price(
         self, mrkt_tp: str = "0", inds_cd: str = "001", **kw: Any,
@@ -89,6 +89,6 @@ class IndustryAPI:
             inds_cd: 업종코드 (001:종합KOSPI)
         """
         return await self._client.get(
-            "/api/dostk/indtp", tr_id="ka20009",
+            "/api/dostk/sect", tr_id="ka20009",
             mrkt_tp=mrkt_tp, inds_cd=inds_cd, **kw,
         )

@@ -28,7 +28,7 @@ class ThemeAPI:
             stex_tp: 거래소구분 (1:KRX, 3:통합)
         """
         return await self._client.get(
-            "/api/dostk/stkinfo", tr_id="ka90001",
+            "/api/dostk/thme", tr_id="ka90001",
             qry_tp=qry_tp, date_tp=date_tp,
             flu_pl_amt_tp=flu_pl_amt_tp, stex_tp=stex_tp, **kw,
         )
@@ -43,6 +43,6 @@ class ThemeAPI:
             stex_tp: 거래소구분 (1:KRX, 3:통합)
         """
         return await self._client.get(
-            "/api/dostk/stkinfo", tr_id="ka90002",
+            "/api/dostk/thme", tr_id="ka90002",
             thema_grp_cd=thema_grp_cd, stex_tp=stex_tp, **kw,
         )

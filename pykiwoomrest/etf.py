@@ -24,7 +24,7 @@ class EtfAPI:
             dt: 일자구분 (0)
         """
         return await self._client.get(
-            "/api/dostk/stkinfo", tr_id="ka40001",
+            "/api/dostk/etf", tr_id="ka40001",
             stk_cd=stk_cd, etfobjt_idex_cd=etfobjt_idex_cd, dt=dt, **kw,
         )
 
@@ -34,7 +34,7 @@ class EtfAPI:
         Args:
             stk_cd: 종목코드
         """
-        return await self._client.get("/api/dostk/stkinfo", tr_id="ka40002", stk_cd=stk_cd, **kw)
+        return await self._client.get("/api/dostk/etf", tr_id="ka40002", stk_cd=stk_cd, **kw)
 
     async def daily_trend(self, stk_cd: str, **kw: Any) -> dict[str, Any]:
         """ka40003 — ETF일별추이요청
@@ -42,7 +42,7 @@ class EtfAPI:
         Args:
             stk_cd: 종목코드
         """
-        return await self._client.get("/api/dostk/stkinfo", tr_id="ka40003", stk_cd=stk_cd, **kw)
+        return await self._client.get("/api/dostk/etf", tr_id="ka40003", stk_cd=stk_cd, **kw)
 
     async def overall_market_price(
         self,
@@ -62,7 +62,7 @@ class EtfAPI:
             stex_tp: 거래소구분 (1:KRX, 3:통합)
         """
         return await self._client.get(
-            "/api/dostk/stkinfo", tr_id="ka40004",
+            "/api/dostk/etf", tr_id="ka40004",
             txon_type=txon_type, navpre=navpre, mngmcomp=mngmcomp,
             txon_yn=txon_yn, trace_idex=trace_idex,
             stex_tp=stex_tp, **kw,
@@ -74,7 +74,7 @@ class EtfAPI:
         Args:
             stk_cd: 종목코드
         """
-        return await self._client.get("/api/dostk/stkinfo", tr_id="ka40006", stk_cd=stk_cd, **kw)
+        return await self._client.get("/api/dostk/etf", tr_id="ka40006", stk_cd=stk_cd, **kw)
 
     async def time_segment_execution(self, stk_cd: str, **kw: Any) -> dict[str, Any]:
         """ka40007 — ETF시간대별체결요청
@@ -82,7 +82,7 @@ class EtfAPI:
         Args:
             stk_cd: 종목코드
         """
-        return await self._client.get("/api/dostk/stkinfo", tr_id="ka40007", stk_cd=stk_cd, **kw)
+        return await self._client.get("/api/dostk/etf", tr_id="ka40007", stk_cd=stk_cd, **kw)
 
     async def daily_execution(self, stk_cd: str, **kw: Any) -> dict[str, Any]:
         """ka40008 — ETF일자별체결요청
@@ -90,7 +90,7 @@ class EtfAPI:
         Args:
             stk_cd: 종목코드
         """
-        return await self._client.get("/api/dostk/stkinfo", tr_id="ka40008", stk_cd=stk_cd, **kw)
+        return await self._client.get("/api/dostk/etf", tr_id="ka40008", stk_cd=stk_cd, **kw)
 
     async def time_nav(self, stk_cd: str, **kw: Any) -> dict[str, Any]:
         """ka40009 — ETF시간대별NAV요청
@@ -98,7 +98,7 @@ class EtfAPI:
         Args:
             stk_cd: 종목코드
         """
-        return await self._client.get("/api/dostk/stkinfo", tr_id="ka40009", stk_cd=stk_cd, **kw)
+        return await self._client.get("/api/dostk/etf", tr_id="ka40009", stk_cd=stk_cd, **kw)
 
     async def time_trend(self, stk_cd: str, **kw: Any) -> dict[str, Any]:
         """ka40010 — ETF시간대별추이요청
@@ -106,4 +106,4 @@ class EtfAPI:
         Args:
             stk_cd: 종목코드
         """
-        return await self._client.get("/api/dostk/stkinfo", tr_id="ka40010", stk_cd=stk_cd, **kw)
+        return await self._client.get("/api/dostk/etf", tr_id="ka40010", stk_cd=stk_cd, **kw)
