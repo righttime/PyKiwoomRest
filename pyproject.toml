@@ -1,0 +1,14 @@
+[project]
+name = "pykiwoomrest"
+version = "0.1.0"
+description = "키움증권 REST API Python 래퍼"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
