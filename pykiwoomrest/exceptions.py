@@ -1,5 +1,7 @@
 """키움 REST API 예외"""
 
+from __future__ import annotations
+
 
 class KiwoomAPIError(Exception):
     """키움 API 에러"""

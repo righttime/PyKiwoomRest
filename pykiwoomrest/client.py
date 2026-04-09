@@ -68,12 +68,11 @@ class KiwoomClient:
 
         resp = await self._http.post(
             "/oauth2/token",
-            data={
+            json={
                 "grant_type": "client_credentials",
                 "appkey": self.config.api_key,
                 "secretkey": self.config.secret_key,
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         resp.raise_for_status()
         body = resp.json()
@@ -151,7 +150,7 @@ class KiwoomClient:
 
             await self._rate_limit()
             assert self._http is not None
-            resp = await self._http.get(endpoint, headers=hdrs, params=params)
+            resp = await self._http.post(endpoint, headers=hdrs, json=params)
             body = self._handle_response(resp, hdrs)
 
             # 데이터 누적
@@ -194,7 +193,7 @@ class KiwoomClient:
     def _auth_headers(self) -> dict[str, str]:
         return {
             "Authorization": f"Bearer {self._token}",
-            "Content-Type": "application/json",
+            "Content-Type": "application/json;charset=utf-8",
         }
 
     async def get(
@@ -204,15 +203,16 @@ class KiwoomClient:
         tr_id: str | None = None,
         **params: Any,
     ) -> dict[str, Any]:
-        """GET 요청 (시세/조회용)"""
+        """조회 요청 (키움 REST API는 전부 POST 기반)"""
         await self._ensure_token()
         assert self._http is not None
 
         headers = self._auth_headers()
         if tr_id:
-            headers["api_id"] = tr_id
+            headers["api-id"] = tr_id
 
-        resp = await self._http.get(endpoint, headers=headers, params=params)
+        await self._rate_limit()
+        resp = await self._http.post(endpoint, headers=headers, json=params)
         return self._handle_response(resp, headers)
 
     async def post(
@@ -222,13 +222,14 @@ class KiwoomClient:
         tr_id: str | None = None,
         data: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """POST 요청 (주문용)"""
+        """주문/갱신 요청"""
         await self._ensure_token()
         assert self._http is not None
 
         headers = self._auth_headers()
         if tr_id:
-            headers["api_id"] = tr_id
+            headers["api-id"] = tr_id
 
+        await self._rate_limit()
         resp = await self._http.post(endpoint, headers=headers, json=data or {})
         return self._handle_response(resp, headers)
