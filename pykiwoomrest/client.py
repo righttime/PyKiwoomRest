@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from typing import Any
@@ -9,6 +10,7 @@ from typing import Any
 import httpx
 
 from .config import KiwoomConfig
+from .exceptions import KiwoomAPIError
 
 logger = logging.getLogger("pykiwoomrest")
 
@@ -86,6 +88,94 @@ class KiwoomClient:
         if time.time() >= self._token_expires - 300:  # 5분 여유
             await self._issue_token()
 
+    # ── Rate Limiting ─────────────────────────────
+
+    _last_request_time: float = 0.0
+    _min_interval: float = 0.05  # 50ms = 20 req/sec
+
+    async def _rate_limit(self) -> None:
+        """초당 20회 제한"""
+        now = time.time()
+        elapsed = now - self._last_request_time
+        if elapsed < self._min_interval:
+            await asyncio.sleep(self._min_interval - elapsed)
+        self._last_request_time = time.time()
+
+    # ── Response Handling ─────────────────────────
+
+    @staticmethod
+    def _handle_response(resp: httpx.Response, headers: dict) -> dict[str, Any]:
+        """응답 처리 + 연속조회 헤더 보존"""
+        body = resp.json()
+
+        # 에러 체크
+        return_code = str(body.get("return_code", "0"))
+        if return_code != "0":
+            raise KiwoomAPIError(
+                return_code=return_code,
+                return_msg=body.get("return_msg", "Unknown error"),
+                response=body,
+            )
+
+        # 연속조회 정보 보존
+        cont_yn = resp.headers.get("cont-yn")
+        next_key = resp.headers.get("next-key")
+        if cont_yn:
+            body["_cont_yn"] = cont_yn
+            body["_next_key"] = next_key
+
+        return body
+
+    # ── Pagination ────────────────────────────────
+
+    async def request_all(
+        self,
+        endpoint: str,
+        tr_id: str,
+        data_key: str | None = None,
+        **params: Any,
+    ) -> dict[str, Any]:
+        """연속조회 자동 처리 (모든 페이지 조회)"""
+        result: dict[str, Any] = {}
+        all_items: list[dict] = []
+        cont_yn: str | None = None
+        next_key: str | None = None
+
+        while True:
+            hdrs = self._auth_headers()
+            hdrs["api_id"] = tr_id
+            if cont_yn:
+                hdrs["cont-yn"] = cont_yn
+            if next_key:
+                hdrs["next-key"] = next_key
+
+            await self._rate_limit()
+            assert self._http is not None
+            resp = await self._http.get(endpoint, headers=hdrs, params=params)
+            body = self._handle_response(resp, hdrs)
+
+            # 데이터 누적
+            if data_key and data_key in body:
+                items = body[data_key]
+                if isinstance(items, list):
+                    all_items.extend(items)
+                else:
+                    if not result:
+                        result = body
+                    break
+            else:
+                result.update(body)
+
+            cont_yn = body.pop("_cont_yn", None)
+            next_key = body.pop("_next_key", None)
+            if not cont_yn:
+                break
+
+        if data_key and all_items:
+            result[data_key] = all_items
+
+        return result
+
     async def revoke_token(self) -> None:
         """토큰 폐기"""
         assert self._http is not None
@@ -123,8 +213,7 @@ class KiwoomClient:
             headers["api_id"] = tr_id
 
         resp = await self._http.get(endpoint, headers=headers, params=params)
-        resp.raise_for_status()
-        return resp.json()
+        return self._handle_response(resp, headers)
 
     async def post(
         self,
@@ -142,5 +231,4 @@ class KiwoomClient:
             headers["api_id"] = tr_id
 
         resp = await self._http.post(endpoint, headers=headers, json=data or {})
-        resp.raise_for_status()
-        return resp.json()
+        return self._handle_response(resp, headers)
