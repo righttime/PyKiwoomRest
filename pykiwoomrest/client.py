@@ -142,7 +142,7 @@ class KiwoomClient:
 
         while True:
             hdrs = self._auth_headers()
-            hdrs["api_id"] = tr_id
+            hdrs["api-id"] = tr_id
             if cont_yn:
                 hdrs["cont-yn"] = cont_yn
             if next_key:
