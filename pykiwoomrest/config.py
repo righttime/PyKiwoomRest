@@ -39,8 +39,8 @@ class KiwoomConfig:
             api_key = os.getenv("KIWOOM_MOCK_API_KEY") or os.getenv("KIWOOM_API_KEY", "")
             secret_key = os.getenv("KIWOOM_MOCK_SECRET_KEY") or os.getenv("KIWOOM_SECRET_KEY", "")
         else:
-            api_key = os.getenv("KIWOOM_API_KEY", "")
-            secret_key = os.getenv("KIWOOM_SECRET_KEY", "")
+            api_key = os.getenv("KIWOOM_REAL_API_KEY") or os.getenv("KIWOOM_API_KEY", "")
+            secret_key = os.getenv("KIWOOM_REAL_SECRET_KEY") or os.getenv("KIWOOM_SECRET_KEY", "")
 
         return cls(
             api_key=api_key,
