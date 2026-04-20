@@ -50,14 +50,8 @@ class TradingAPI:
         qty: int,
         price: int | None = None,
     ) -> dict[str, Any]:
-        """kt10000 - 매수주문
-
-        Args:
-            stk_cd: 종목코드 (6자리)
-            qty: 주문수량
-            price: 지정가 (None이면 시장가)
-        """
-        order_type = "00" if price else "03"  # 00=지정가, 03=시장가
+        """kt10000 - 매수주문"""
+        order_type = "00" if price else "03"
         data = self._acct_params(
             stk_cd=stk_cd,
             ord_qty=str(qty),
@@ -65,7 +59,6 @@ class TradingAPI:
         )
         if price:
             data["ord_prc"] = str(price)
-
         logger.warning("📈 매수주문: %s %d주 %s", stk_cd, qty, f"{price}원" if price else "시장가")
         return await self._client.post(
             "/api/dostk/acnt", tr_id="kt10000", data=data
@@ -77,13 +70,7 @@ class TradingAPI:
         qty: int,
         price: int | None = None,
     ) -> dict[str, Any]:
-        """kt10001 - 매도주문
-
-        Args:
-            stk_cd: 종목코드 (6자리)
-            qty: 주문수량
-            price: 지정가 (None이면 시장가)
-        """
+        """kt10001 - 매도주문"""
         order_type = "00" if price else "03"
         data = self._acct_params(
             stk_cd=stk_cd,
@@ -92,7 +79,6 @@ class TradingAPI:
         )
         if price:
             data["ord_prc"] = str(price)
-
         logger.warning("📉 매도주문: %s %d주 %s", stk_cd, qty, f"{price}원" if price else "시장가")
         return await self._client.post(
             "/api/dostk/acnt", tr_id="kt10001", data=data
@@ -104,13 +90,7 @@ class TradingAPI:
         stk_cd: str,
         qty: int | None = None,
     ) -> dict[str, Any]:
-        """kt10003 - 주문취소
-
-        Args:
-            orig_ord_no: 원주문번호
-            stk_cd:     종목코드
-            qty:        취소수량 (None이면 전량취소)
-        """
+        """kt10003 - 주문취소"""
         data = self._acct_params(
             dmst_stex_tp="KRX",
             orig_ord_no=orig_ord_no,
@@ -129,27 +109,41 @@ class TradingAPI:
         stk_cd: str,
         mdfy_qty: int,
         mdfy_price: int,
-        mdfy_cond_uv: str = "",
     ) -> dict[str, Any]:
-        """kt10002 - 주문정정
-
-        Args:
-            orig_ord_no: 원주문번호 (Kiwoom에서 반환된 주문번호)
-            stk_cd:     종목코드 (6자리)
-            mdfy_qty:   정정수량
-            mdfy_price: 정정단가
-            mdfy_cond_uv: 정정조건단가 (보통 빈 문자열)
-        """
+        """kt10002 - 주문정정"""
         data = self._acct_params(
             dmst_stex_tp="KRX",
             orig_ord_no=orig_ord_no,
             stk_cd=stk_cd,
             mdfy_qty=str(mdfy_qty),
             mdfy_uv=str(mdfy_price),
-            mdfy_cond_uv=mdfy_cond_uv,
+            mdfy_cond_uv="",
         )
         logger.warning("🔁 주문정정: %s %s %d주 → %d원", orig_ord_no, stk_cd, mdfy_qty, mdfy_price)
         return await self._client.post(
             "/api/dostk/ordr", tr_id="kt10002", data=data
         )
 
+    async def unfulfilled_orders(
+        self,
+        all_stk_tp: str = "0",
+        trde_tp: str = "0",
+        stk_cd: str = "",
+    ) -> dict[str, Any]:
+        """ka10075 - 미체결조회
+
+        Args:
+            all_stk_tp: 전체종목구분 0:전체, 1:종목
+            trde_tp:    매매구분    0:전체, 1:매도, 2:매수
+            stk_cd:     종목코드 (all_stk_tp=1일 때 필수)
+        """
+        data = self._acct_params(
+            all_stk_tp=all_stk_tp,
+            trde_tp=trde_tp,
+            stk_cd=stk_cd,
+            stex_tp="0",
+        )
+        logger.debug("🔍 미체결조회: all_stk_tp=%s trde_tp=%s stk_cd=%s", all_stk_tp, trde_tp, stk_cd)
+        return await self._client.post(
+            "/api/dostk/acnt", tr_id="ka10075", data=data
+        )
