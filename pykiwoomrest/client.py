@@ -120,7 +120,7 @@ class KiwoomClient:
 
         headers = self._auth_headers()
         if tr_id:
-            headers["api_id"] = tr_id
+            headers["api-id"] = tr_id
 
         resp = await self._http.get(endpoint, headers=headers, params=params)
         resp.raise_for_status()
@@ -139,7 +139,32 @@ class KiwoomClient:
 
         headers = self._auth_headers()
         if tr_id:
-            headers["api_id"] = tr_id
+            headers["api-id"] = tr_id
+
+        resp = await self._http.post(endpoint, headers=headers, json=data or {})
+        resp.raise_for_status()
+        return resp.json()
+
+
+    async def post_list(
+        self,
+        endpoint: str,
+        *,
+        tr_id: str | None = None,
+        data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """POST 요청 (리스트 조회용) - cont-yn, next-key 헤더 포함"""
+        await self._ensure_token()
+        assert self._http is not None
+
+        headers = {
+            "Content-Type": "application/json;charset=UTF-8",
+            "authorization": f"Bearer {self._token}",
+            "cont-yn": "N",
+            "next-key": "",
+        }
+        if tr_id:
+            headers["api-id"] = tr_id
 
         resp = await self._http.post(endpoint, headers=headers, json=data or {})
         resp.raise_for_status()

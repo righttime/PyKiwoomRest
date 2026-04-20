@@ -40,9 +40,11 @@ class MarketAPI:
         )
 
     async def stock_list(self) -> dict[str, Any]:
-        """ka10099 - 종목정보리스트"""
-        return await self._client.get(
-            "/api/dostk/stkinfo", tr_id="ka10099"
+        """ka10099 - 종목정보리스트 (POST + special headers)"""
+        return await self._client.post_list(
+            "/api/dostk/stkinfo",
+            tr_id="ka10099",
+            data={"mrkt_tp": "0"}  # 0=KOSPI, 10=KOSDAQ 등
         )
 
     async def search_stock(self, keyword: str) -> dict[str, Any]:
@@ -66,27 +68,45 @@ class MarketAPI:
         )
 
     async def day_chart(self, stk_cd: str, **kwargs: Any) -> dict[str, Any]:
-        """ka10081 - 일봉차트"""
-        return await self._client.get(
-            "/api/dostk/chart", tr_id="ka10081", stk_cd=stk_cd, **kwargs
+        """ka10081 - 일봉차트 (POST required)"""
+        return await self._client.post(
+            "/api/dostk/chart", tr_id="ka10081",
+            data={
+                "stk_cd": stk_cd,
+                **kwargs,
+            }
         )
 
     async def week_chart(self, stk_cd: str, **kwargs: Any) -> dict[str, Any]:
-        """ka10082 - 주봉차트"""
-        return await self._client.get(
-            "/api/dostk/chart", tr_id="ka10082", stk_cd=stk_cd, **kwargs
+        """ka10082 - 주봉차트 (POST required)"""
+        return await self._client.post(
+            "/api/dostk/chart", tr_id="ka10082",
+            data={
+                "stk_cd": stk_cd,
+                **kwargs,
+            }
         )
 
     async def month_chart(self, stk_cd: str, **kwargs: Any) -> dict[str, Any]:
         """ka10083 - 월봉차트"""
-        return await self._client.get(
-            "/api/dostk/chart", tr_id="ka10083", stk_cd=stk_cd, **kwargs
+    async def month_chart(self, stk_cd: str, **kwargs: Any) -> dict[str, Any]:
+        """ka10083 - 월봉차트 (POST required)"""
+        return await self._client.post(
+            "/api/dostk/chart", tr_id="ka10083",
+            data={
+                "stk_cd": stk_cd,
+                **kwargs,
+            }
         )
 
     async def year_chart(self, stk_cd: str, **kwargs: Any) -> dict[str, Any]:
-        """ka10094 - 년봉차트"""
-        return await self._client.get(
-            "/api/dostk/chart", tr_id="ka10094", stk_cd=stk_cd, **kwargs
+        """ka10094 - 년봉차트 (POST required)"""
+        return await self._client.post(
+            "/api/dostk/chart", tr_id="ka10094",
+            data={
+                "stk_cd": stk_cd,
+                **kwargs,
+            }
         )
 
     # ── 시세/시장 (mrkcond) ────────────────────────
