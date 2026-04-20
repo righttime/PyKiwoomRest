@@ -97,3 +97,59 @@ class TradingAPI:
         return await self._client.post(
             "/api/dostk/acnt", tr_id="kt10001", data=data
         )
+
+    async def cancel_order(
+        self,
+        orig_ord_no: str,
+        stk_cd: str,
+        qty: int | None = None,
+    ) -> dict[str, Any]:
+        """kt10003 - 주문취소
+
+        Args:
+            orig_ord_no: 원주문번호
+            stk_cd:     종목코드
+            qty:        취소수량 (None이면 전량취소)
+        """
+        data = self._acct_params(
+            dmst_stex_tp="KRX",
+            orig_ord_no=orig_ord_no,
+            stk_cd=stk_cd,
+        )
+        if qty is not None:
+            data["can_qty"] = str(qty)
+        logger.warning("❌ 주문취소: %s %s", orig_ord_no, stk_cd)
+        return await self._client.post(
+            "/api/dostk/ordr", tr_id="kt10003", data=data
+        )
+
+    async def modify_order(
+        self,
+        orig_ord_no: str,
+        stk_cd: str,
+        mdfy_qty: int,
+        mdfy_price: int,
+        mdfy_cond_uv: str = "",
+    ) -> dict[str, Any]:
+        """kt10002 - 주문정정
+
+        Args:
+            orig_ord_no: 원주문번호 (Kiwoom에서 반환된 주문번호)
+            stk_cd:     종목코드 (6자리)
+            mdfy_qty:   정정수량
+            mdfy_price: 정정단가
+            mdfy_cond_uv: 정정조건단가 (보통 빈 문자열)
+        """
+        data = self._acct_params(
+            dmst_stex_tp="KRX",
+            orig_ord_no=orig_ord_no,
+            stk_cd=stk_cd,
+            mdfy_qty=str(mdfy_qty),
+            mdfy_uv=str(mdfy_price),
+            mdfy_cond_uv=mdfy_cond_uv,
+        )
+        logger.warning("🔁 주문정정: %s %s %d주 → %d원", orig_ord_no, stk_cd, mdfy_qty, mdfy_price)
+        return await self._client.post(
+            "/api/dostk/ordr", tr_id="kt10002", data=data
+        )
+
