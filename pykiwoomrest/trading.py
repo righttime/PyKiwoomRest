@@ -97,7 +97,9 @@ class TradingAPI:
             stk_cd=stk_cd,
         )
         if qty is not None:
-            data["can_qty"] = str(qty)
+            data["cncl_qty"] = str(qty)
+        else:
+            data["cncl_qty"] = "0"  # 전량 취소
         logger.warning("❌ 주문취소: %s %s", orig_ord_no, stk_cd)
         return await self._client.post(
             "/api/dostk/ordr", tr_id="kt10003", data=data
