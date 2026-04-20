@@ -39,12 +39,13 @@ class MarketAPI:
             "/api/dostk/stkinfo", tr_id="ka10015", stk_cd=stk_cd
         )
 
-    async def stock_list(self) -> dict[str, Any]:
-        """ka10099 - 종목정보리스트 (POST + special headers)"""
+    async def stock_list(self, mrkt_tp: str = "0") -> dict[str, Any]:
+        """ka10099 - 종목정보리스트 (POST + special headers)
+        mrkt_tp: '0'=KOSPI, '10'=KOSDAQ"""
         return await self._client.post_list(
             "/api/dostk/stkinfo",
             tr_id="ka10099",
-            data={"mrkt_tp": "0"}  # 0=KOSPI, 10=KOSDAQ 등
+            data={"mrkt_tp": mrkt_tp}
         )
 
     async def search_stock(self, keyword: str) -> dict[str, Any]:
