@@ -66,12 +66,12 @@ class KiwoomClient:
 
         resp = await self._http.post(
             "/oauth2/token",
-            data={
+            json={
                 "grant_type": "client_credentials",
                 "appkey": self.config.api_key,
                 "secretkey": self.config.secret_key,
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            headers={"api-id": "au10001"},
         )
         resp.raise_for_status()
         body = resp.json()
