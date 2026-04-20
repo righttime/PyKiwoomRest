@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from typing import Any
@@ -152,20 +153,45 @@ class KiwoomClient:
         *,
         tr_id: str | None = None,
         data: dict[str, Any] | None = None,
+        list_key: str = "list",
     ) -> dict[str, Any]:
-        """POST 요청 (리스트 조회용) - cont-yn, next-key 헤더 포함"""
+        """POST 요청 (리스트 조회용) - cont-yn/next-key 헤더 자동 처리
+        
+        여러 페이지가 있으면 자동으로 모두 합쳐서 반환.
+        응답 구조: {list_key: [...], cont_yn, next_key}
+        """
         await self._ensure_token()
         assert self._http is not None
 
-        headers = {
-            "Content-Type": "application/json;charset=UTF-8",
-            "authorization": f"Bearer {self._token}",
-            "cont-yn": "N",
-            "next-key": "",
-        }
-        if tr_id:
-            headers["api-id"] = tr_id
+        all_items = []
+        cont_yn = "N"
+        next_key = ""
 
-        resp = await self._http.post(endpoint, headers=headers, json=data or {})
-        resp.raise_for_status()
-        return resp.json()
+        while True:
+            headers = {
+                "Content-Type": "application/json;charset=UTF-8",
+                "authorization": f"Bearer {self._token}",
+                "cont-yn": cont_yn,
+                "next-key": next_key,
+            }
+            if tr_id:
+                headers["api-id"] = tr_id
+
+            resp = await self._http.post(endpoint, headers=headers, json=data or {})
+            resp.raise_for_status()
+            body = resp.json()
+
+
+            page_items = body.get(list_key, [])
+            all_items.extend(page_items)
+
+            cont_yn = body.get("cont_yn", "N")
+            next_key = body.get("next_key", "") or ""
+            if cont_yn != "Y" or not next_key:
+                break
+
+            # Rate limit safety
+            await asyncio.sleep(0.1)
+
+
+        return {list_key: all_items}

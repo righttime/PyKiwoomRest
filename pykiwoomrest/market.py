@@ -69,7 +69,8 @@ class MarketAPI:
         )
 
     async def day_chart(self, stk_cd: str, start_dt: str, end_dt: str, upd_stkpc_tp: str = "1", base_dt: str = "0") -> dict[str, Any]:
-        """ka10081 - 일봉차트 (POST + special headers for list) """
+        """ka10081 - 일봉차트 (POST + post_list for pagination)
+        Returns raw body dict with 'stk_dt_pole_chart_qry' key."""
         return await self._client.post_list(
             "/api/dostk/chart",
             tr_id="ka10081",
@@ -79,7 +80,8 @@ class MarketAPI:
                 "end_dt": end_dt,
                 "upd_stkpc_tp": upd_stkpc_tp,
                 "base_dt": base_dt,
-            }
+            },
+            list_key="stk_dt_pole_chart_qry",
         )
 
     async def week_chart(self, stk_cd: str, **kwargs: Any) -> dict[str, Any]:
