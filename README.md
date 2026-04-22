@@ -136,6 +136,161 @@ pykiwoomrest/
 └── foreign.py       # 외국인/기관
 ```
 
+## 지원하는 키움 API 목록
+
+### MarketAPI - 시세/종목/차트 조회
+
+#### basic_info(stk_cd)
+- **TR ID**: ka10001
+- **설명**: 주식기본정보 (현재가, 전일대비, 등락률)
+- **매개변수**: stk_cd (종목코드, 6자리)
+
+#### trade_volume_by_firm(stk_cd)
+- **TR ID**: ka10002
+- **설명**: 주식거래원 (매수/매도 거래원)
+- **매개변수**: stk_cd (종목코드)
+
+#### execution_info(stk_cd)
+- **TR ID**: ka10003
+- **설명**: 체결정보
+- **매개변수**: stk_cd (종목코드)
+
+#### daily_trade_detail(stk_cd)
+- **TR ID**: ka10015
+- **설명**: 일별거래상세
+- **매개변수**: stk_cd (종목코드)
+
+#### stock_list(mrkt_tp="0")
+- **TR ID**: ka10099
+- **설명**: 종목정보리스트 (KOSPI/KOSDAQ 전체 종목)
+- **매개변수**: mrkt_tp ("0"=KOSPI, "10"=KOSDAQ)
+
+#### search_stock(keyword)
+- **TR ID**: ka10100
+- **설명**: 종목정보조회 (이름으로 종목 검색)
+- **매개변수**: keyword (종목명)
+
+#### tick_chart(stk_cd, **kwargs)
+- **TR ID**: ka10079
+- **설명**: 틱차트
+- **매개변수**: stk_cd (종목코드), 추가 옵션 **kwargs
+
+#### min_chart(stk_cd, **kwargs)
+- **TR ID**: ka10080
+- **설명**: 분봉차트
+- **매개변수**: stk_cd (종목코드), 추가 옵션 **kwargs
+
+#### day_chart(stk_cd, start_dt, end_dt, upd_stkpc_tp="1", base_dt="0")
+- **TR ID**: ka10081
+- **설명**: 일봉차트 (페이지네이션 자동 지원)
+- **매개변수**: stk_cd (종목코드), start_dt (시작일), end_dt (종료일), upd_stkpc_tp (수정주가여부), base_dt (기준일)
+
+#### week_chart(stk_cd, **kwargs)
+- **TR ID**: ka10082
+- **설명**: 주봉차트
+- **매개변수**: stk_cd (종목코드), 추가 옵션 **kwargs
+
+#### month_chart(stk_cd, **kwargs)
+- **TR ID**: ka10083
+- **설명**: 월봉차트
+- **매개변수**: stk_cd (종목코드), 추가 옵션 **kwargs
+
+#### year_chart(stk_cd, **kwargs)
+- **TR ID**: ka10094
+- **설명**: 년봉차트
+- **매개변수**: stk_cd (종목코드), 추가 옵션 **kwargs
+
+#### quote(stk_cd)
+- **TR ID**: ka10004
+- **설명**: 주식호가 (매수/매도 호가창)
+- **매개변수**: stk_cd (종목코드)
+
+#### daily_price(stk_cd, **kwargs)
+- **TR ID**: ka10086
+- **설명**: 일별주가 (과거 일별 주가)
+- **매개변수**: stk_cd (종목코드), 추가 옵션 **kwargs
+
+### TradingAPI - 매매/계좌 주문 및 조회
+
+#### deposit()
+- **TR ID**: kt00001
+- **설명**: 예수금상세현황
+- **매개변수**: 없음 (계좌번호는 config에서 자동 사용)
+
+#### account_summary()
+- **TR ID**: kt00004
+- **설명**: 계좌평가현황 (총 평가금액, 수익률)
+- **매개변수**: 없음
+
+#### holdings()
+- **TR ID**: kt00005
+- **설명**: 체결잔고 (보유 종목별 잔고)
+- **매개변수**: 없음
+
+#### buy(stk_cd, qty, price=None)
+- **TR ID**: kt10000
+- **설명**: 매수주문 (지정가/시장가)
+- **매개변수**: stk_cd (종목코드), qty (수량), price (가격, None=시장가)
+
+#### sell(stk_cd, qty, price=None)
+- **TR ID**: kt10001
+- **설명**: 매도주문 (지정가/시장가)
+- **매개변수**: stk_cd (종목코드), qty (수량), price (가격, None=시장가)
+
+#### cancel_order(orig_ord_no, stk_cd, qty=None)
+- **TR ID**: kt10003
+- **설명**: 주문취소 (전량취소 또는 일부취소)
+- **매개변수**: orig_ord_no (원주문번호), stk_cd (종목코드), qty (취소수량, None=전량)
+
+#### modify_order(orig_ord_no, stk_cd, mdfy_qty, mdfy_price)
+- **TR ID**: kt10002
+- **설명**: 주문정정
+- **매개변수**: orig_ord_no (원주문번호), stk_cd (종목코드), mdfy_qty (정정수량), mdfy_price (정정가격)
+
+#### unfulfilled_orders(all_stk_tp="0", trde_tp="0", stk_cd="")
+- **TR ID**: ka10075
+- **설명**: 미체결조회
+- **매개변수**: all_stk_tp ("0"=전체, "1"=특정종목), trde_tp ("0"=전체, "1"=매도, "2"=매수), stk_cd (종목코드, all_stk_tp="1"일 때 필수)
+
+### RankAPI - 순위 조회
+
+#### volume_rank(**kwargs)
+- **TR ID**: ka10030
+- **설명**: 당일거래량상위
+- **매개변수**: 추가 옵션 **kwargs
+
+#### value_rank(**kwargs)
+- **TR ID**: ka10032
+- **설명**: 거래대금상위
+- **매개변수**: 추가 옵션 **kwargs
+
+#### change_rate_rank(**kwargs)
+- **TR ID**: ka10027
+- **설명**: 등락률상위
+- **매개변수**: 추가 옵션 **kwargs
+
+#### orderbook_rank(**kwargs)
+- **TR ID**: ka10020
+- **설명**: 호가잔량상위
+- **매개변수**: 추가 옵션 **kwargs
+
+### ForeignAPI - 외국인/기관 매매동향
+
+#### foreign_trade_by_stock(stk_cd)
+- **TR ID**: ka10008
+- **설명**: 외국인종목별매매동향
+- **매개변수**: stk_cd (종목코드)
+
+#### institution_trade(**kwargs)
+- **TR ID**: ka10009
+- **설명**: 주식기관요청
+- **매개변수**: 추가 옵션 **kwargs
+
+#### foreign_institution_rank(**kwargs)
+- **TR ID**: ka90009
+- **설명**: 외국인기관매매상위
+- **매개변수**: 추가 옵션 **kwargs
+
 ## 주의사항
 
 - 매수/매도 주문은 항상 로그가 남습니다
