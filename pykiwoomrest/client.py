@@ -77,7 +77,12 @@ class KiwoomClient:
         resp.raise_for_status()
         body = resp.json()
 
-        self._token = body["token"]
+        # 키움 API 응답 구조: return_code=0이면 성공
+        if body.get("return_code") != 0:
+            msg = body.get("return_msg", "Unknown error")
+            raise RuntimeError(f"토큰 발급 실패: [{body.get('return_code')}:{msg}]")
+
+        self._token = body.get("token", "")
         self._token_expires = time.time() + 86_400  # 24시간
         logger.info("토큰 발급 성공 (만료: 24h 후)")
         return self._token
@@ -105,7 +110,7 @@ class KiwoomClient:
     def _auth_headers(self) -> dict[str, str]:
         return {
             "Authorization": f"Bearer {self._token}",
-            "Content-Type": "application/json",
+            "Content-Type": "application/json;charset=UTF-8",
         }
 
     async def get(

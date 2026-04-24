@@ -25,21 +25,30 @@ class TradingAPI:
     # ── 계좌 조회 ──────────────────────────────────
 
     async def deposit(self) -> dict[str, Any]:
-        """kt00001 - 예수금상세현황"""
-        return await self._client.get(
-            "/api/dostk/acnt", tr_id="kt00001", **self._acct_params()
+        """kt00001 - 예수금상세현황 (POST 요청)"""
+        data = {
+            "qry_tp": "3",  # 3:추정조회, 2:일반조회
+        }
+        return await self._client.post(
+            "/api/dostk/acnt", tr_id="kt00001", data=data
         )
 
     async def account_summary(self) -> dict[str, Any]:
         """kt00004 - 계좌평가현황 (총 평가금액, 수익률)"""
-        return await self._client.get(
-            "/api/dostk/acnt", tr_id="kt00004", **self._acct_params()
+        data = {
+            "dmst_stex_tp": "KRX",  # 국내거래소구분 (필수)
+        }
+        return await self._client.post(
+            "/api/dostk/acnt", tr_id="kt00004", data=data
         )
 
     async def holdings(self) -> dict[str, Any]:
         """kt00005 - 체결잔고 (보유 종목별 잔고)"""
-        return await self._client.get(
-            "/api/dostk/acnt", tr_id="kt00005", **self._acct_params()
+        data = {
+            "dmst_stex_tp": "KRX",  # 국내거소구분 (필수)
+        }
+        return await self._client.post(
+            "/api/dostk/acnt", tr_id="kt00005", data=data
         )
 
     # ── 주문 ───────────────────────────────────────
@@ -51,17 +60,19 @@ class TradingAPI:
         price: int | None = None,
     ) -> dict[str, Any]:
         """kt10000 - 매수주문"""
-        order_type = "00" if price else "03"
-        data = self._acct_params(
-            stk_cd=stk_cd,
-            ord_qty=str(qty),
-            ord_tp=order_type,
-        )
+        # trde_tp: 0=보통, 3=시장가
+        trde_tp = "3" if not price else "0"
+        data = {
+            "dmst_stex_tp": "KRX",  # 국내거래소구분 (필수)
+            "stk_cd": stk_cd,
+            "ord_qty": str(qty),
+            "trde_tp": trde_tp,
+        }
         if price:
-            data["ord_prc"] = str(price)
+            data["ord_uv"] = str(price)  # 주문단가
         logger.warning("📈 매수주문: %s %d주 %s", stk_cd, qty, f"{price}원" if price else "시장가")
         return await self._client.post(
-            "/api/dostk/acnt", tr_id="kt10000", data=data
+            "/api/dostk/ordr", tr_id="kt10000", data=data
         )
 
     async def sell(
@@ -71,17 +82,19 @@ class TradingAPI:
         price: int | None = None,
     ) -> dict[str, Any]:
         """kt10001 - 매도주문"""
-        order_type = "00" if price else "03"
-        data = self._acct_params(
-            stk_cd=stk_cd,
-            ord_qty=str(qty),
-            ord_tp=order_type,
-        )
+        # trde_tp: 0=보통, 3=시장가
+        trde_tp = "3" if not price else "0"
+        data = {
+            "dmst_stex_tp": "KRX",  # 국내거래소구분 (필수)
+            "stk_cd": stk_cd,
+            "ord_qty": str(qty),
+            "trde_tp": trde_tp,
+        }
         if price:
-            data["ord_prc"] = str(price)
+            data["ord_uv"] = str(price)  # 주문단가
         logger.warning("📉 매도주문: %s %d주 %s", stk_cd, qty, f"{price}원" if price else "시장가")
         return await self._client.post(
-            "/api/dostk/acnt", tr_id="kt10001", data=data
+            "/api/dostk/ordr", tr_id="kt10001", data=data
         )
 
     async def cancel_order(
@@ -91,11 +104,11 @@ class TradingAPI:
         qty: int | None = None,
     ) -> dict[str, Any]:
         """kt10003 - 주문취소"""
-        data = self._acct_params(
-            dmst_stex_tp="KRX",
-            orig_ord_no=orig_ord_no,
-            stk_cd=stk_cd,
-        )
+        data = {
+            "dmst_stex_tp": "KRX",  # 국내거래소구분 (필수)
+            "orig_ord_no": orig_ord_no,
+            "stk_cd": stk_cd,
+        }
         if qty is not None:
             data["cncl_qty"] = str(qty)
         else:
@@ -113,14 +126,13 @@ class TradingAPI:
         mdfy_price: int,
     ) -> dict[str, Any]:
         """kt10002 - 주문정정"""
-        data = self._acct_params(
-            dmst_stex_tp="KRX",
-            orig_ord_no=orig_ord_no,
-            stk_cd=stk_cd,
-            mdfy_qty=str(mdfy_qty),
-            mdfy_uv=str(mdfy_price),
-            mdfy_cond_uv="",
-        )
+        data = {
+            "dmst_stex_tp": "KRX",  # 국내거래소구분 (필수)
+            "orig_ord_no": orig_ord_no,
+            "stk_cd": stk_cd,
+            "mdfy_qty": str(mdfy_qty),
+            "mdfy_uv": str(mdfy_price),  # 수정단가
+        }
         logger.warning("🔁 주문정정: %s %s %d주 → %d원", orig_ord_no, stk_cd, mdfy_qty, mdfy_price)
         return await self._client.post(
             "/api/dostk/ordr", tr_id="kt10002", data=data

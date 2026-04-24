@@ -95,8 +95,6 @@ class MarketAPI:
         )
 
     async def month_chart(self, stk_cd: str, **kwargs: Any) -> dict[str, Any]:
-        """ka10083 - 월봉차트"""
-    async def month_chart(self, stk_cd: str, **kwargs: Any) -> dict[str, Any]:
         """ka10083 - 월봉차트 (POST required)"""
         return await self._client.post(
             "/api/dostk/chart", tr_id="ka10083",
