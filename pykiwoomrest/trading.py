@@ -17,11 +17,6 @@ class TradingAPI:
         self._client = client
         self._account_no = account_no or client.config.account_no
 
-    def _acct_params(self, **extra: Any) -> dict[str, Any]:
-        params: dict[str, Any] = {"acct_no": self._account_no}
-        params.update(extra)
-        return params
-
     # ── 계좌 조회 ──────────────────────────────────
 
     async def deposit(self) -> dict[str, Any]:
@@ -36,6 +31,7 @@ class TradingAPI:
     async def account_summary(self) -> dict[str, Any]:
         """kt00004 - 계좌평가현황 (총 평가금액, 수익률)"""
         data = {
+            "qry_tp": "1",  # 1:일반조회, 2:주문가능조회
             "dmst_stex_tp": "KRX",  # 국내거래소구분 (필수)
         }
         return await self._client.post(
@@ -71,9 +67,12 @@ class TradingAPI:
         if price:
             data["ord_uv"] = str(price)  # 주문단가
         logger.warning("📈 매수주문: %s %d주 %s", stk_cd, qty, f"{price}원" if price else "시장가")
-        return await self._client.post(
+        logger.info(f"TradingAPI.buy 호출: endpoint=/api/dostk/ordr, tr_id=kt10000, data={data}")
+        result = await self._client.post(
             "/api/dostk/ordr", tr_id="kt10000", data=data
         )
+        logger.info(f"TradingAPI.buy 응답: {result}")
+        return result
 
     async def sell(
         self,
@@ -151,12 +150,12 @@ class TradingAPI:
             trde_tp:    매매구분    0:전체, 1:매도, 2:매수
             stk_cd:     종목코드 (all_stk_tp=1일 때 필수)
         """
-        data = self._acct_params(
-            all_stk_tp=all_stk_tp,
-            trde_tp=trde_tp,
-            stk_cd=stk_cd,
-            stex_tp="0",
-        )
+        data = {
+            "all_stk_tp": all_stk_tp,
+            "trde_tp": trde_tp,
+            "stk_cd": stk_cd,
+            "stex_tp": "0",
+        }
         logger.debug("🔍 미체결조회: all_stk_tp=%s trde_tp=%s stk_cd=%s", all_stk_tp, trde_tp, stk_cd)
         return await self._client.post(
             "/api/dostk/acnt", tr_id="ka10075", data=data

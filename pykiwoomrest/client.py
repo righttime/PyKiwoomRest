@@ -147,7 +147,12 @@ class KiwoomClient:
         if tr_id:
             headers["api-id"] = tr_id
 
+        # 요청 URL 로깅
+        full_url = f"{self.config.base_url}{endpoint}"
+        logger.info(f"POST 요청: full_url={full_url}, endpoint={endpoint}, tr_id={tr_id}, data={data}")
+        logger.info(f"HTTP Client base_url: {self._http.base_url}")
         resp = await self._http.post(endpoint, headers=headers, json=data or {})
+        logger.info(f"POST 응답: status={resp.status_code}, url={str(resp.url)}")
         resp.raise_for_status()
         return resp.json()
 
