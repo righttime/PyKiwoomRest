@@ -227,6 +227,11 @@ pykiwoomrest/
 - **설명**: 체결잔고 (보유 종목별 잔고)
 - **매개변수**: 없음
 
+#### daily_profit_rate(qry_dt)
+- **TR ID**: ka01690
+- **설명**: 일별잔고수익률 (전체 계좌 현황 + 종목별 수익률)
+- **매개변수**: qry_dt (조회일자, YYYYMMDD)
+
 #### buy(stk_cd, qty, price=None)
 - **TR ID**: kt10000
 - **설명**: 매수주문 (지정가/시장가)

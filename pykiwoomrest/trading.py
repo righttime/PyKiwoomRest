@@ -47,6 +47,20 @@ class TradingAPI:
             "/api/dostk/acnt", tr_id="kt00005", data=data
         )
 
+    async def daily_profit_rate(self, qry_dt: str) -> dict[str, Any]:
+        """ka01690 - 일별잔고수익률
+
+        Args:
+            qry_dt: 조회일자 (YYYYMMDD)
+        """
+        data = {
+            "qry_dt": qry_dt,
+        }
+        logger.debug("📊 일별잔고수익률 조회: qry_dt=%s", qry_dt)
+        return await self._client.post(
+            "/api/dostk/acnt", tr_id="ka01690", data=data
+        )
+
     # ── 주문 ───────────────────────────────────────
 
     async def buy(
@@ -54,12 +68,20 @@ class TradingAPI:
         stk_cd: str,
         qty: int,
         price: int | None = None,
+        dmst_stex_tp: str = "KRX",
     ) -> dict[str, Any]:
-        """kt10000 - 매수주문"""
+        """kt10000 - 매수주문
+
+        Args:
+            stk_cd: 종목코드
+            qty: 수량
+            price: 가격 (None이면 시장가)
+            dmst_stex_tp: 국내거래소구분 (KRX, SOR, NXT 등)
+        """
         # trde_tp: 0=보통, 3=시장가
         trde_tp = "3" if not price else "0"
         data = {
-            "dmst_stex_tp": "KRX",  # 국내거래소구분 (필수)
+            "dmst_stex_tp": dmst_stex_tp,  # 국내거래소구분 (필수)
             "stk_cd": stk_cd,
             "ord_qty": str(qty),
             "trde_tp": trde_tp,
@@ -79,12 +101,20 @@ class TradingAPI:
         stk_cd: str,
         qty: int,
         price: int | None = None,
+        dmst_stex_tp: str = "KRX",
     ) -> dict[str, Any]:
-        """kt10001 - 매도주문"""
+        """kt10001 - 매도주문
+
+        Args:
+            stk_cd: 종목코드
+            qty: 수량
+            price: 가격
+            dmst_stex_tp: 국내거래소구분 (KRX, SOR, NXT 등)
+        """
         # trde_tp: 0=보통, 3=시장가
         trde_tp = "3" if not price else "0"
         data = {
-            "dmst_stex_tp": "KRX",  # 국내거래소구분 (필수)
+            "dmst_stex_tp": dmst_stex_tp,  # 국내거래소구분 (필수)
             "stk_cd": stk_cd,
             "ord_qty": str(qty),
             "trde_tp": trde_tp,
@@ -101,10 +131,18 @@ class TradingAPI:
         orig_ord_no: str,
         stk_cd: str,
         qty: int | None = None,
+        dmst_stex_tp: str = "KRX",
     ) -> dict[str, Any]:
-        """kt10003 - 주문취소"""
+        """kt10003 - 주문취소
+
+        Args:
+            orig_ord_no: 원주문번호
+            stk_cd: 종목코드
+            qty: 수량
+            dmst_stex_tp: 국내거래소구분 (KRX, SOR, NXT 등)
+        """
         data = {
-            "dmst_stex_tp": "KRX",  # 국내거래소구분 (필수)
+            "dmst_stex_tp": dmst_stex_tp,  # 국내거래소구분 (필수)
             "orig_ord_no": orig_ord_no,
             "stk_cd": stk_cd,
         }
