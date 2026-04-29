@@ -118,7 +118,7 @@ class RealtimeMessageType(Enum):
 class RealtimeType(Enum):
     """실시간 데이터 타입 (TR 명)"""
     # 주문/체결 관련
-    ORDER_EXECUTION = "0A"          # 주문/체결
+    ORDER_EXECUTION = "00"          # 주문/체결
 
     # 시세 관련
     STOCK_CURRENT = "0B"            # 현재가
