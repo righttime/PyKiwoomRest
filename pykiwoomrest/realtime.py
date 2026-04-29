@@ -129,7 +129,7 @@ class RealtimeType(Enum):
     STOCK_03 = "03"                 # 주식매매
 
     # 장상태
-    MARKET_STATUS = "90"            # 장상태
+    MARKET_STATUS = "0S"            # 장시간 (장상태)
 
 
 # ============================================================================
@@ -372,6 +372,8 @@ class WebSocketClient:
         self._message_handlers: Dict[str, List[Callable]] = {}
         self._subscriptions: Dict[str, Subscription] = {}  # grp_no -> Subscription
         self._next_grp_no = 1
+        self._login_complete = asyncio.Event()
+        self._login_future: Optional[asyncio.Future] = None
 
     async def connect(self) -> bool:
         """WebSocket 서버에 연결"""
@@ -380,9 +382,6 @@ class WebSocketClient:
             self.websocket = await websockets.connect(self.uri)
             self.connected = True
             logger.info("WebSocket 연결 성공")
-
-            # 로그인 패킷 전송
-            await self._send_login()
             return True
 
         except Exception as e:
@@ -391,7 +390,7 @@ class WebSocketClient:
             return False
 
     async def _send_login(self) -> bool:
-        """로그인 패킷 전송"""
+        """로그인 패킷 전송 (receive loop 실행 후 호출 필요)"""
         param = {
             'trnm': RealtimeMessageType.LOGIN.value,
             'token': self.access_token
@@ -400,11 +399,11 @@ class WebSocketClient:
         logger.info("로그인 패킷 전송 중...")
         await self.send_message(param)
 
-        # 로그인 응답 대기 (최대 5초)
+        # 로그인 응답 대기 (최대 10초)
         try:
             response = await asyncio.wait_for(
                 self._wait_for_response(RealtimeMessageType.LOGIN.value),
-                timeout=5.0
+                timeout=10.0
             )
 
             if response.get('return_code') != 0:
@@ -413,6 +412,7 @@ class WebSocketClient:
                 return False
 
             logger.info("로그인 성공")
+            self._login_complete.set()
             return True
 
         except asyncio.TimeoutError:
@@ -438,7 +438,7 @@ class WebSocketClient:
 
     async def send_message(self, message: Any) -> None:
         """서버에 메시지 전송"""
-        if not self.connected:
+        if not self.connected or not self._is_websocket_open():
             logger.warning("WebSocket이 연결되지 않음. 연결 시도...")
             if not await self.connect():
                 raise ConnectionError("WebSocket 연결 실패")
@@ -448,14 +448,14 @@ class WebSocketClient:
             message = json.dumps(message, ensure_ascii=False)
 
         await self.websocket.send(message)
-        logger.debug(f"Message sent: {message[:100]}...")
+        logger.info(f"📤 서버 전송: {message}")
 
     async def receive_messages(self) -> None:
         """서버 메시지 수신 루프"""
         logger.info("메시지 수신 루프 시작")
         while self.keep_running:
             try:
-                if not self.websocket or self.websocket.closed:
+                if not self._is_websocket_open():
                     logger.warning("WebSocket 연결 끊김. 재연결 시도...")
                     await asyncio.sleep(1)
                     if await self.connect():
@@ -467,14 +467,17 @@ class WebSocketClient:
                 raw_message = await self.websocket.recv()
                 response = json.loads(raw_message)
 
+                # 모든 메시지 로깅
+                message_type = response.get('trnm', '')
+                logger.info(f"📨 서버 수신 [{message_type}]: {raw_message}")
+
                 # PING 처리 (PONG 응답)
                 if response.get('trnm') == RealtimeMessageType.PING.value:
                     await self.send_message(response)
-                    logger.debug("PING 수신, PONG 응답")
+                    logger.info("📤 PING 수신, PONG 응답")
                     continue
 
                 # 메시지 핸들러 호출
-                message_type = response.get('trnm', '')
                 handlers = self._message_handlers.get(message_type, [])
 
                 for handler in handlers:
@@ -486,12 +489,8 @@ class WebSocketClient:
                     except Exception as e:
                         logger.error(f"Handler error for {message_type}: {e}", exc_info=True)
 
-                # 기본 로그 (핸들러가 없는 경우)
-                if not handlers and message_type != RealtimeMessageType.PING.value:
-                    logger.debug(f"실시간 시세 수신 [{message_type}]: {response}")
-
-            except websockets.ConnectionClosed:
-                logger.warning("WebSocket 연결이 서버에 의해 종료됨")
+            except websockets.ConnectionClosed as e:
+                logger.warning(f"WebSocket 연결이 서버에 의해 종료됨: {e}")
                 self.connected = False
                 await self._handle_disconnect()
 
@@ -555,6 +554,18 @@ class WebSocketClient:
         if message_type in self._message_handlers:
             if handler in self._message_handlers[message_type]:
                 self._message_handlers[message_type].remove(handler)
+
+    def _is_websocket_open(self) -> bool:
+        """WebSocket 연결 상태 확인 (websockets 라이브러리 호환성)"""
+        if not self.websocket:
+            return False
+        # websockets 라이브러리 버전 호환성 처리
+        if hasattr(self.websocket, 'open'):
+            return self.websocket.open
+        elif hasattr(self.websocket, 'closed'):
+            return not self.websocket.closed
+        # 속성이 없으면 연결된 것으로 가정
+        return self.connected
 
     async def register(
         self,
@@ -628,8 +639,37 @@ class WebSocketClient:
 
     async def run(self) -> None:
         """WebSocket 클라이언트 실행"""
-        await self.connect()
-        await self.receive_messages()
+        if not await self.connect():
+            return
+
+        # 수신 루프와 로그인을 병렬로 실행
+        receive_task = asyncio.create_task(self.receive_messages())
+        login_task = asyncio.create_task(self._send_login())
+
+        # 로그인 완료 대기
+        try:
+            login_success = await asyncio.wait_for(login_task, timeout=15.0)
+            if not login_success:
+                logger.error("로그인 실패로 WebSocket 종료")
+                self.keep_running = False
+                receive_task.cancel()
+                try:
+                    await receive_task
+                except asyncio.CancelledError:
+                    pass
+                return
+        except asyncio.TimeoutError:
+            logger.error("로그인 타임아웃")
+            self.keep_running = False
+            receive_task.cancel()
+            try:
+                await receive_task
+            except asyncio.CancelledError:
+                pass
+            return
+
+        # 수신 루프가 끝날 때까지 대기
+        await receive_task
 
     async def start(self) -> None:
         """백그라운드에서 WebSocket 실행"""
@@ -639,6 +679,15 @@ class WebSocketClient:
 
         self._receive_task = asyncio.create_task(self.run())
         logger.info("WebSocket 백그라운드 실행 시작")
+
+    async def wait_for_ready(self, timeout: float = 15.0) -> bool:
+        """로그인 완료까지 대기"""
+        try:
+            await asyncio.wait_for(self._login_complete.wait(), timeout=timeout)
+            return self.is_connected
+        except asyncio.TimeoutError:
+            logger.error(f"WebSocket 준비 대기 타임아웃 ({timeout}초)")
+            return False
 
     async def stop(self) -> None:
         """WebSocket 클라이언트 중지"""
@@ -662,18 +711,18 @@ class WebSocketClient:
     async def disconnect(self) -> None:
         """WebSocket 연결 종료"""
         self.keep_running = False
-        if self.connected and self.websocket:
+        if self.connected and self._is_websocket_open():
             try:
                 await self.websocket.close()
             except:
                 pass
-            self.connected = False
-            logger.info("WebSocket 연결 종료")
+        self.connected = False
+        logger.info("WebSocket 연결 종료")
 
     @property
     def is_connected(self) -> bool:
         """연결 상태"""
-        return self.connected and self.websocket and not self.websocket.closed
+        return self.connected and self._is_websocket_open()
 
     @property
     def subscriptions(self) -> Dict[str, Subscription]:
