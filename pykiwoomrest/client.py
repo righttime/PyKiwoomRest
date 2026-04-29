@@ -269,6 +269,12 @@ class KiwoomClient:
                 resp.raise_for_status()
                 body = resp.json()
 
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 401:
+                    logger.warning("인증 실패, 토큰 재발급 시도...")
+                    await self._issue_token()
+                    continue  # 재시도
+                raise
 
             page_items = body.get(list_key, [])
             all_items.extend(page_items)
@@ -280,6 +286,5 @@ class KiwoomClient:
 
             # Rate limit safety
             await asyncio.sleep(0.1)
-
 
         return {list_key: all_items}
