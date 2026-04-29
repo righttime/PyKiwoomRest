@@ -2,7 +2,7 @@
 
 __version__ = "0.1.0"
 
-from .client import KiwoomClient
+from .client import KiwoomClient, TokenExpiredError
 from .config import KiwoomConfig
 from .trading import TradingAPI
 from .market import MarketAPI
@@ -22,6 +22,7 @@ from .realtime import (
 
 __all__ = [
     "KiwoomClient",
+    "TokenExpiredError",
     "KiwoomConfig",
     "TradingAPI",
     "MarketAPI",
