@@ -1,0 +1,29 @@
+2026-04-29 08:17:45 - INFO - 로그 파일: logs/traderbot_20260429_081745.log
+2026-04-29 08:17:45 - INFO - 계좌 정보 조회 중...
+2026-04-29 08:17:45 - INFO - 계좌 정보 조회 중...
+2026-04-29 08:17:45 - INFO - 계좌 정보 조회 중...
+2026-04-29 08:17:45 - INFO - 계좌 정보 조회 중...
+2026-04-29 08:17:45 - INFO - 계좌 정보 조회 중...
+2026-04-29 08:17:45 - ERROR - 계좌 정보 조회 중 오류: API Error
+2026-04-29 08:17:45 - INFO - DB 초기화 완료: /var/folders/g8/sl9b3vxs5znbqxcdlw_w29mc0000gn/T/tmpan_dlqrv.db
+2026-04-29 08:17:45 - INFO - DB 초기화 완료: /var/folders/g8/sl9b3vxs5znbqxcdlw_w29mc0000gn/T/tmpij1n34zp.db
+2026-04-29 08:17:45 - INFO - DB 초기화 완료: /var/folders/g8/sl9b3vxs5znbqxcdlw_w29mc0000gn/T/tmpw3ckv0sr.db
+2026-04-29 08:17:45 - INFO - 토큰 저장 완료
+2026-04-29 08:17:45 - INFO - 토큰 저장 완료
+2026-04-29 08:17:45 - INFO - 토큰 저장 완료
+2026-04-29 08:17:45 - INFO - 1개의 오래된 토큰 정리 완료
+2026-04-29 08:17:45 - INFO - DB 초기화 완료: /var/folders/g8/sl9b3vxs5znbqxcdlw_w29mc0000gn/T/tmpyd4pfyfy.db
+2026-04-29 08:17:45 - INFO - DB 초기화 완료: /var/folders/g8/sl9b3vxs5znbqxcdlw_w29mc0000gn/T/tmp5yjvi6df.db
+2026-04-29 08:17:45 - INFO - DB 초기화 완료: /var/folders/g8/sl9b3vxs5znbqxcdlw_w29mc0000gn/T/tmp8f0301n5.db
+2026-04-29 08:17:45 - INFO - 일일 리포트 저장: 2026-04-29
+2026-04-29 08:17:45 - INFO - DB 초기화 완료: /var/folders/g8/sl9b3vxs5znbqxcdlw_w29mc0000gn/T/tmpk8zs4um6.db
+2026-04-29 08:17:45 - INFO - DB 초기화 완료: /var/folders/g8/sl9b3vxs5znbqxcdlw_w29mc0000gn/T/tmp1c8ddg22.db
+2026-04-29 08:17:45 - INFO - DB 초기화 완료: /var/folders/g8/sl9b3vxs5znbqxcdlw_w29mc0000gn/T/tmpfqntkv4e.db
+2026-04-29 08:17:45 - INFO - DB 초기화 완료: /var/folders/g8/sl9b3vxs5znbqxcdlw_w29mc0000gn/T/tmp8xgqhk0u.db
+2026-04-29 08:17:45 - INFO - HTTP Request: POST https://mockapi.kiwoom.com/oauth2/token "HTTP/1.1 200 OK"
+2026-04-29 08:17:45 - INFO - DB 초기화 완료: /var/folders/g8/sl9b3vxs5znbqxcdlw_w29mc0000gn/T/tmpeoprkp5i.db
+2026-04-29 08:17:45 - INFO - HTTP Request: POST https://mockapi.kiwoom.com/oauth2/token "HTTP/1.1 200 OK"
+2026-04-29 08:17:45 - INFO - DB 초기화 완료: /var/folders/g8/sl9b3vxs5znbqxcdlw_w29mc0000gn/T/tmpjh8qmhi1.db
+2026-04-29 08:17:45 - INFO - HTTP Request: POST https://mockapi.kiwoom.com/oauth2/token "HTTP/1.1 429 null"
+2026-04-29 08:17:45 - INFO - DB 초기화 완료: /var/folders/g8/sl9b3vxs5znbqxcdlw_w29mc0000gn/T/tmpiryzjrsy.db
+2026-04-29 08:17:45 - INFO - HTTP Request: POST https://mockapi.kiwoom.com/oauth2/token "HTTP/1.1 429 null"

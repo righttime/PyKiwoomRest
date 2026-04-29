@@ -133,7 +133,8 @@ pykiwoomrest/
 ├── market.py        # 시세/차트 (ka1xxxx)
 ├── trading.py       # 매매/계좌 (kt0xxxx, kt1xxxx)
 ├── rank.py          # 순위 조회
-└── foreign.py       # 외국인/기관
+├── foreign.py       # 외국인/기관
+└── realtime.py      # 실시간 데이터 (WebSocket)
 ```
 
 ## 지원하는 키움 API 목록
@@ -295,6 +296,73 @@ pykiwoomrest/
 - **TR ID**: ka90009
 - **설명**: 외국인기관매매상위
 - **매개변수**: 추가 옵션 **kwargs
+
+### RealtimeAPI - 실시간 데이터 스트리밍
+
+실시간 시세, 장상태 등을 WebSocket을 통해 수신합니다.
+
+```python
+from pykiwoomrest import RealtimeAPI, RealtimeType
+
+# RealtimeAPI 생성
+realtime = RealtimeAPI(access_token=token, mock=False)
+client = realtime.create_client()
+
+# 핸들러 등록
+def on_quote(message):
+    print(f"시세 수신: {message}")
+
+def on_market_status(message):
+    print(f"장상태 수신: {message}")
+
+client.register_handler("0B", on_quote)  # 현재가
+client.register_handler("90", on_market_status)  # 장상태
+
+# 백그라운드 실행
+await client.start()
+
+# 실시간 항목 등록
+# 장상태 (90)
+await client.register(items=[""], types=["90"], grp_no="0")
+
+# 종목 시세 (0B: 현재가, 0C: 호가, 0F: 체결)
+await client.register(
+    items=["005930", "000660"],
+    types=["0B", "0C"],
+    grp_no="1"
+)
+
+# 수신 대기
+await asyncio.sleep(30)
+
+# 정리
+await client.stop()
+```
+
+#### 실시간 데이터 타입
+
+| 타입 코드 | 설명 |
+|-----------|------|
+| `0B` | 현재가 |
+| `0C` | 호가 |
+| `0F` | 체결 |
+| `01` | 주식체결 |
+| `02` | 주식호가 |
+| `03` | 주식매매 |
+| `90` | 장상태 |
+
+#### WebSocketClient 메서드
+
+| 메서드 | 설명 |
+|--------|------|
+| `connect()` | WebSocket 서버 연결 |
+| `disconnect()` | 연결 종료 |
+| `start()` | 백그라운드에서 실행 |
+| `stop()` | 실행 중지 |
+| `register(items, types, grp_no, refresh)` | 실시간 항목 등록 |
+| `deregister(grp_no)` | 실시간 항목 해지 |
+| `register_handler(message_type, handler)` | 메시지 핸들러 등록 |
+| `unregister_handler(message_type, handler)` | 핸들러 해제 |
 
 ## 주의사항
 

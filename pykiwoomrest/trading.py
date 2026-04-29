@@ -198,3 +198,59 @@ class TradingAPI:
         return await self._client.post(
             "/api/dostk/acnt", tr_id="ka10075", data=data
         )
+
+    async def order_contracts(
+        self,
+        ord_dt: str = "",
+        qry_tp: str = "3",  # 3:미체결, 4:체결내역만
+        stk_bond_tp: str = "0",  # 0:전체, 1:주식, 2:채권
+        sell_tp: str = "0",  # 0:전체, 1:매도, 2:매수
+        stk_cd: str = "",  # 공백일때 전체종목
+        fr_ord_no: str = "",  # 시작주문번호, 공백일때 전체
+        dmst_stex_tp: str = "%",  # %:전체, KRX, NXT, SOR
+    ) -> dict[str, Any]:
+        """kt00007 - 계좌별주문체결내역상세
+
+        Args:
+            ord_dt: 주문일자 (YYYYMMDD), 공백 가능
+            qry_tp: 조회구분 (필수)
+                1: 주문순
+                2: 역순
+                3: 미체결
+                4: 체결내역만
+            stk_bond_tp: 주식채권구분 (필수)
+                0: 전체
+                1: 주식
+                2: 채권
+            sell_tp: 매도수구분 (필수)
+                0: 전체
+                1: 매도
+                2: 매수
+            stk_cd: 종목코드, 공백허용 (공백일때 전체종목)
+            fr_ord_no: 시작주문번호, 공백허용 (공백일때 전체주문)
+            dmst_stex_tp: 국내거래소구분 (필수)
+                %: 전체
+                KRX: 한국거래소
+                NXT: 넥스트트레이드
+                SOR: 최선주문집행
+
+        Returns:
+            응답 데이터 (acnt_ord_cntr_prps_dtl 배열 포함)
+        """
+        data = {
+            "ord_dt": ord_dt,
+            "qry_tp": qry_tp,
+            "stk_bond_tp": stk_bond_tp,
+            "sell_tp": sell_tp,
+            "stk_cd": stk_cd,
+            "fr_ord_no": fr_ord_no,
+            "dmst_stex_tp": dmst_stex_tp,
+        }
+
+        logger.debug(
+            "📋 계좌별주문체결내역상세: qry_tp=%s stk_cd=%s sell_tp=%s",
+            qry_tp, stk_cd, sell_tp
+        )
+        return await self._client.post(
+            "/api/dostk/acnt", tr_id="kt00007", data=data
+        )

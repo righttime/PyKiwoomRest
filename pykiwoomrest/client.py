@@ -34,13 +34,23 @@ class KiwoomClient:
         self._token_expires: float = 0.0
         self._http: httpx.AsyncClient | None = None
 
-    async def init(self) -> None:
-        """HTTP 클라이언트 초기화 + 토큰 발급"""
+    async def init(self, use_existing_token: str | None = None) -> None:
+        """HTTP 클라이언트 초기화 + 토큰 발급
+
+        Args:
+            use_existing_token: 기존 토큰이 있으면 사용 (없으면 새로 발급)
+        """
         self._http = httpx.AsyncClient(
             base_url=self.config.base_url,
             timeout=30.0,
         )
-        await self._issue_token()
+
+        # 기존 토큰이 있으면 설정
+        if use_existing_token:
+            self._token = use_existing_token
+            self._token_expires = time.time() + 86_400
+        else:
+            await self._issue_token()
 
     async def close(self) -> None:
         """리소스 정리"""
@@ -138,21 +148,21 @@ class KiwoomClient:
         *,
         tr_id: str | None = None,
         data: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         """POST 요청 (주문용)"""
         await self._ensure_token()
         assert self._http is not None
 
-        headers = self._auth_headers()
+        request_headers = self._auth_headers()
         if tr_id:
-            headers["api-id"] = tr_id
+            request_headers["api-id"] = tr_id
 
-        # 요청 URL 로깅
-        full_url = f"{self.config.base_url}{endpoint}"
-        logger.info(f"POST 요청: full_url={full_url}, endpoint={endpoint}, tr_id={tr_id}, data={data}")
-        logger.info(f"HTTP Client base_url: {self._http.base_url}")
-        resp = await self._http.post(endpoint, headers=headers, json=data or {})
-        logger.info(f"POST 응답: status={resp.status_code}, url={str(resp.url)}")
+        # 추가 헤더 병합 (cont-yn, next-key 등)
+        if headers:
+            request_headers.update(headers)
+
+        resp = await self._http.post(endpoint, headers=request_headers, json=data or {})
         resp.raise_for_status()
         return resp.json()
 

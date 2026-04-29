@@ -8,6 +8,7 @@ from .trading import TradingAPI
 from .market import MarketAPI
 from .foreign import ForeignAPI
 from .rank import RankAPI
+from .realtime import RealtimeAPI, WebSocketClient, RealtimeType
 
 __all__ = [
     "KiwoomClient",
@@ -16,4 +17,7 @@ __all__ = [
     "MarketAPI",
     "ForeignAPI",
     "RankAPI",
+    "RealtimeAPI",
+    "WebSocketClient",
+    "RealtimeType",
 ]
