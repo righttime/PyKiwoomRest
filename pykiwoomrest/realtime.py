@@ -6,50 +6,358 @@ import logging
 from typing import Optional, Callable, Dict, List, Any, Set
 from dataclasses import dataclass, field
 from enum import Enum
+from datetime import datetime
 import websockets
 
 logger = logging.getLogger(__name__)
 
+
+# ============================================================================
+# 필드 정의 (키움 API 실시간 데이터 필드)
+# ============================================================================
+
+class OrderField(Enum):
+    """주문/체결 관련 필드 (0A)"""
+    ACCOUNT_NO = "9201"           # 계좌번호
+    ORDER_NO = "9203"              # 주문번호
+    MANAGER_NO = "9205"            # 관리자사번
+    STOCK_CODE = "9001"            # 종목코드, 업종코드
+    ORDER_TYPE = "912"             # 주문업무분류
+    ORDER_STATUS = "913"           # 주문상태 (접수, 체결, 확인, 취소, 거부)
+    STOCK_NAME = "302"             # 종목명
+    ORDER_QTY = "900"              # 주문수량
+    ORDER_PRICE = "901"            # 주문가격
+    UNFILLED_QTY = "902"           # 미체결수량
+    FILLED_AMOUNT = "903"          # 체결누계금액
+    ORIGINAL_ORDER_NO = "904"      # 원주문번호
+    ORDER_DIVISION = "905"         # 주문구분 (+/-, 매도, 매수, 매도정정, 매수정정, 매수취소, 매도취소)
+    TRADE_DIVISION = "906"         # 매매구분 (보통, 시장가, 조건부지정가, 최유리지정가, 최우선지정가, ...)
+    SELL_BUY_DIVISION = "907"      # 매도수구분 (1:매도, 2:매수)
+    ORDER_TIME = "908"             # 주문/체결시간
+    EXECUTION_NO = "909"           # 체결번호
+    EXECUTION_PRICE = "910"        # 체결가
+    EXECUTION_QTY = "911"          # 체결량
+    CURRENT_PRICE = "10"           # 현재가
+    ASK_PRICE = "27"               # (최우선)매도호가
+    BID_PRICE = "28"               # (최우선)매수호가
+    UNIT_EXEC_PRICE = "914"        # 단위체결가
+    UNIT_EXEC_QTY = "915"          # 단위체결량
+    COMMISSION = "938"             # 당일매매수수료
+    TAX = "939"                    # 당일매매세금
+    REJECT_REASON = "919"          # 거부사유
+    SCREEN_NO = "920"              # 화면번호
+    TERMINAL_NO = "921"            # 터미널번호
+    CREDIT_DIVISION = "922"        # 신용구분
+    LOAN_DATE = "923"              # 대출일
+    AFTER_CURRENT_PRICE = "10010"  # 시간외단일가_현재가
+    MARKET_DIVISION = "2134"       # 거래소구분 (0:통합, 1:KRX, 2:NXT)
+    MARKET_DIVISION_NAME = "2135"  # 거래소구분명
+    SOR_YN = "2136"                # SOR여부 (Y,N)
+
+
+class QuoteField(Enum):
+    """시세 관련 필드 (0B)"""
+    EXECUTION_TIME = "20"          # 체결시간
+    CURRENT_PRICE = "10"           # 현재가
+    CHANGE = "11"                  # 전일대비
+    CHANGE_RATE = "12"             # 등락률
+    ASK_PRICE = "27"               # (최우선)매도호가
+    BID_PRICE = "28"               # (최우선)매수호가
+    TRADE_VOLUME = "15"            # 거래량 (+:매수체결, -:매도체결)
+    CUMULATIVE_VOLUME = "13"       # 누적거래량
+    CUMULATIVE_AMOUNT = "14"       # 누적거래대금
+    OPEN_PRICE = "16"              # 시가
+    HIGH_PRICE = "17"              # 고가
+    LOW_PRICE = "18"               # 저가
+    CHANGE_SIGN = "25"             # 전일대비기호
+    PREVIOUS_VOLUME = "26"         # 전일거래량대비(계약,주)
+    AMOUNT_CHANGE = "29"           # 거래대금증감
+    PREVIOUS_VOLUME_RATIO = "30"   # 전일거래량대비(비율)
+    TURNOVER_RATE = "31"           # 거래회전율
+    TRADING_COST = "32"            # 거래비용
+    EXECUTION_STRENGTH = "228"     # 체결강도
+    MARKET_CAP = "311"             # 시가총액(억)
+    SESSION_DIVISION = "290"       # 장구분 (1:장전 시간외, 2:장중, 3:장후 시간외)
+    KO_APPROACH = "691"            # K.O 접근도
+    HIGH_LIMIT_TIME = "567"        # 상한가발생시간
+    LOW_LIMIT_TIME = "568"         # 하한가발생시간
+    PREVIOUS_SAME_TIME_VOLUME_RATIO = "851"  # 전일 동시간 거래량 비율
+    OPEN_TIME = "1890"             # 시가시간
+    HIGH_TIME = "1891"             # 고가시간
+    LOW_TIME = "1892"              # 저가시간
+    SELL_EXEC_QTY = "1030"         # 매도체결량
+    BUY_EXEC_QTY = "1031"          # 매수체결량
+    BUY_RATIO = "1032"             # 매수비율
+    SELL_EXEC_COUNT = "1071"       # 매도체결건수
+    BUY_EXEC_COUNT = "1072"        # 매수체결건수
+    INSTANT_AMOUNT = "1313"        # 순간거래대금
+    SELL_EXEC_QTY_SINGLE = "1315"  # 매도체결량_단건
+    BUY_EXEC_QTY_SINGLE = "1316"   # 매수체결량_단건
+    NET_BUY_EXEC_QTY = "1314"      # 순매수체결량
+    CFD_MARGIN = "1497"            # CFD증거금
+    MAINTENANCE_MARGIN = "1498"    # 유지증거금
+    AVERAGE_TRADE_PRICE = "620"    # 당일거래평균가
+    CFD_COST = "732"               # CFD거래비용
+    DTS_COST = "852"                # 대주거래비용
+    MARKET_DIVISION = "9081"       # 거래소구분
+
+
+# ============================================================================
+# 메시지 타입
+# ============================================================================
 
 class RealtimeMessageType(Enum):
     """실시간 메시지 타입"""
     LOGIN = "LOGIN"
     REG = "REG"
     DEREG = "DEREG"
+    REMOVE = "REMOVE"
     PING = "PING"
-    QUOTE = "QUOTE"
-    MARKET_STATUS = "MARKET_STATUS"
 
 
 class RealtimeType(Enum):
-    """실시간 데이터 타입"""
-    # 시세 관련 (0x)
-    STOCK_0B = "0B"  # 현재가
-    STOCK_0C = "0C"  # 호가
-    STOCK_0F = "0F"  # 체결
-    STOCK_01 = "01"  # 주식체결
-    STOCK_02 = "02"  # 주식호가
-    STOCK_03 = "03"  # 주식매매
+    """실시간 데이터 타입 (TR 명)"""
+    # 주문/체결 관련
+    ORDER_EXECUTION = "0A"          # 주문/체결
+
+    # 시세 관련
+    STOCK_CURRENT = "0B"            # 현재가
+    STOCK_QUOTE = "0C"              # 호가
+    STOCK_EXECUTION = "0F"          # 체결
+    STOCK_01 = "01"                 # 주식체결
+    STOCK_02 = "02"                 # 주식호가
+    STOCK_03 = "03"                 # 주식매매
 
     # 장상태
-    MARKET_STATUS = "90"  # 장상태
+    MARKET_STATUS = "90"            # 장상태
 
+
+# ============================================================================
+# 데이터클래스
+# ============================================================================
+
+@dataclass
+class OrderExecutionData:
+    """주문/체결 데이터 (0A)"""
+    account_no: str = ""
+    order_no: str = ""
+    manager_no: str = ""
+    stock_code: str = ""
+    order_type: str = ""
+    order_status: str = ""
+    stock_name: str = ""
+    order_qty: int = 0
+    order_price: float = 0.0
+    unfilled_qty: int = 0
+    filled_amount: float = 0.0
+    original_order_no: str = ""
+    order_division: str = ""
+    trade_division: str = ""
+    sell_buy_division: str = ""
+    order_time: str = ""
+    execution_no: str = ""
+    execution_price: float = 0.0
+    execution_qty: int = 0
+    current_price: float = 0.0
+    ask_price: float = 0.0
+    bid_price: float = 0.0
+    unit_exec_price: float = 0.0
+    unit_exec_qty: int = 0
+    commission: float = 0.0
+    tax: float = 0.0
+    reject_reason: str = ""
+    screen_no: str = ""
+    terminal_no: str = ""
+    credit_division: str = ""
+    loan_date: str = ""
+    after_current_price: float = 0.0
+    market_division: str = ""
+    market_division_name: str = ""
+    sor_yn: str = ""
+    raw: Dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_values(cls, values: Dict[str, str]) -> "OrderExecutionData":
+        """values 딕셔너리에서 OrderExecutionData 생성"""
+        def safe_int(val: Optional[str]) -> int:
+            try:
+                return int(val) if val else 0
+            except:
+                return 0
+
+        def safe_float(val: Optional[str]) -> float:
+            try:
+                return float(val) if val else 0.0
+            except:
+                return 0.0
+
+        return cls(
+            account_no=values.get(OrderField.ACCOUNT_NO.value, ""),
+            order_no=values.get(OrderField.ORDER_NO.value, ""),
+            manager_no=values.get(OrderField.MANAGER_NO.value, ""),
+            stock_code=values.get(OrderField.STOCK_CODE.value, ""),
+            order_type=values.get(OrderField.ORDER_TYPE.value, ""),
+            order_status=values.get(OrderField.ORDER_STATUS.value, ""),
+            stock_name=values.get(OrderField.STOCK_NAME.value, ""),
+            order_qty=safe_int(values.get(OrderField.ORDER_QTY.value)),
+            order_price=safe_float(values.get(OrderField.ORDER_PRICE.value)),
+            unfilled_qty=safe_int(values.get(OrderField.UNFILLED_QTY.value)),
+            filled_amount=safe_float(values.get(OrderField.FILLED_AMOUNT.value)),
+            original_order_no=values.get(OrderField.ORIGINAL_ORDER_NO.value, ""),
+            order_division=values.get(OrderField.ORDER_DIVISION.value, ""),
+            trade_division=values.get(OrderField.TRADE_DIVISION.value, ""),
+            sell_buy_division=values.get(OrderField.SELL_BUY_DIVISION.value, ""),
+            order_time=values.get(OrderField.ORDER_TIME.value, ""),
+            execution_no=values.get(OrderField.EXECUTION_NO.value, ""),
+            execution_price=safe_float(values.get(OrderField.EXECUTION_PRICE.value)),
+            execution_qty=safe_int(values.get(OrderField.EXECUTION_QTY.value)),
+            current_price=safe_float(values.get(OrderField.CURRENT_PRICE.value)),
+            ask_price=safe_float(values.get(OrderField.ASK_PRICE.value)),
+            bid_price=safe_float(values.get(OrderField.BID_PRICE.value)),
+            unit_exec_price=safe_float(values.get(OrderField.UNIT_EXEC_PRICE.value)),
+            unit_exec_qty=safe_int(values.get(OrderField.UNIT_EXEC_QTY.value)),
+            commission=safe_float(values.get(OrderField.COMMISSION.value)),
+            tax=safe_float(values.get(OrderField.TAX.value)),
+            reject_reason=values.get(OrderField.REJECT_REASON.value, ""),
+            screen_no=values.get(OrderField.SCREEN_NO.value, ""),
+            terminal_no=values.get(OrderField.TERMINAL_NO.value, ""),
+            credit_division=values.get(OrderField.CREDIT_DIVISION.value, ""),
+            loan_date=values.get(OrderField.LOAN_DATE.value, ""),
+            after_current_price=safe_float(values.get(OrderField.AFTER_CURRENT_PRICE.value)),
+            market_division=values.get(OrderField.MARKET_DIVISION.value, ""),
+            market_division_name=values.get(OrderField.MARKET_DIVISION_NAME.value, ""),
+            sor_yn=values.get(OrderField.SOR_YN.value, ""),
+            raw=values
+        )
+
+
+@dataclass
+class QuoteData:
+    """시세 데이터 (0B)"""
+    execution_time: str = ""
+    current_price: float = 0.0
+    change: float = 0.0
+    change_rate: float = 0.0
+    ask_price: float = 0.0
+    bid_price: float = 0.0
+    trade_volume: int = 0
+    cumulative_volume: int = 0
+    cumulative_amount: float = 0.0
+    open_price: float = 0.0
+    high_price: float = 0.0
+    low_price: float = 0.0
+    change_sign: str = ""
+    previous_volume: int = 0
+    amount_change: float = 0.0
+    previous_volume_ratio: float = 0.0
+    turnover_rate: float = 0.0
+    trading_cost: float = 0.0
+    execution_strength: float = 0.0
+    market_cap: float = 0.0
+    session_division: str = ""
+    ko_approach: float = 0.0
+    high_limit_time: str = ""
+    low_limit_time: str = ""
+    previous_same_time_volume_ratio: float = 0.0
+    open_time: str = ""
+    high_time: str = ""
+    low_time: str = ""
+    sell_exec_qty: int = 0
+    buy_exec_qty: int = 0
+    buy_ratio: float = 0.0
+    sell_exec_count: int = 0
+    buy_exec_count: int = 0
+    instant_amount: float = 0.0
+    sell_exec_qty_single: int = 0
+    buy_exec_qty_single: int = 0
+    net_buy_exec_qty: int = 0
+    cfd_margin: float = 0.0
+    maintenance_margin: float = 0.0
+    average_trade_price: float = 0.0
+    cfd_cost: float = 0.0
+    dts_cost: float = 0.0
+    market_division: str = ""
+    raw: Dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_values(cls, values: Dict[str, str]) -> "QuoteData":
+        """values 딕셔너리에서 QuoteData 생성"""
+        def safe_int(val: Optional[str]) -> int:
+            try:
+                return int(val) if val else 0
+            except:
+                return 0
+
+        def safe_float(val: Optional[str]) -> float:
+            try:
+                return float(val) if val else 0.0
+            except:
+                return 0.0
+
+        return cls(
+            execution_time=values.get(QuoteField.EXECUTION_TIME.value, ""),
+            current_price=safe_float(values.get(QuoteField.CURRENT_PRICE.value)),
+            change=safe_float(values.get(QuoteField.CHANGE.value)),
+            change_rate=safe_float(values.get(QuoteField.CHANGE_RATE.value)),
+            ask_price=safe_float(values.get(QuoteField.ASK_PRICE.value)),
+            bid_price=safe_float(values.get(QuoteField.BID_PRICE.value)),
+            trade_volume=safe_int(values.get(QuoteField.TRADE_VOLUME.value)),
+            cumulative_volume=safe_int(values.get(QuoteField.CUMULATIVE_VOLUME.value)),
+            cumulative_amount=safe_float(values.get(QuoteField.CUMULATIVE_AMOUNT.value)),
+            open_price=safe_float(values.get(QuoteField.OPEN_PRICE.value)),
+            high_price=safe_float(values.get(QuoteField.HIGH_PRICE.value)),
+            low_price=safe_float(values.get(QuoteField.LOW_PRICE.value)),
+            change_sign=values.get(QuoteField.CHANGE_SIGN.value, ""),
+            previous_volume=safe_int(values.get(QuoteField.PREVIOUS_VOLUME.value)),
+            amount_change=safe_float(values.get(QuoteField.AMOUNT_CHANGE.value)),
+            previous_volume_ratio=safe_float(values.get(QuoteField.PREVIOUS_VOLUME_RATIO.value)),
+            turnover_rate=safe_float(values.get(QuoteField.TURNOVER_RATE.value)),
+            trading_cost=safe_float(values.get(QuoteField.TRADING_COST.value)),
+            execution_strength=safe_float(values.get(QuoteField.EXECUTION_STRENGTH.value)),
+            market_cap=safe_float(values.get(QuoteField.MARKET_CAP.value)),
+            session_division=values.get(QuoteField.SESSION_DIVISION.value, ""),
+            ko_approach=safe_float(values.get(QuoteField.KO_APPROACH.value)),
+            high_limit_time=values.get(QuoteField.HIGH_LIMIT_TIME.value, ""),
+            low_limit_time=values.get(QuoteField.LOW_LIMIT_TIME.value, ""),
+            previous_same_time_volume_ratio=safe_float(values.get(QuoteField.PREVIOUS_SAME_TIME_VOLUME_RATIO.value)),
+            open_time=values.get(QuoteField.OPEN_TIME.value, ""),
+            high_time=values.get(QuoteField.HIGH_TIME.value, ""),
+            low_time=values.get(QuoteField.LOW_TIME.value, ""),
+            sell_exec_qty=safe_int(values.get(QuoteField.SELL_EXEC_QTY.value)),
+            buy_exec_qty=safe_int(values.get(QuoteField.BUY_EXEC_QTY.value)),
+            buy_ratio=safe_float(values.get(QuoteField.BUY_RATIO.value)),
+            sell_exec_count=safe_int(values.get(QuoteField.SELL_EXEC_COUNT.value)),
+            buy_exec_count=safe_int(values.get(QuoteField.BUY_EXEC_COUNT.value)),
+            instant_amount=safe_float(values.get(QuoteField.INSTANT_AMOUNT.value)),
+            sell_exec_qty_single=safe_int(values.get(QuoteField.SELL_EXEC_QTY_SINGLE.value)),
+            buy_exec_qty_single=safe_int(values.get(QuoteField.BUY_EXEC_QTY_SINGLE.value)),
+            net_buy_exec_qty=safe_int(values.get(QuoteField.NET_BUY_EXEC_QTY.value)),
+            cfd_margin=safe_float(values.get(QuoteField.CFD_MARGIN.value)),
+            maintenance_margin=safe_float(values.get(QuoteField.MAINTENANCE_MARGIN.value)),
+            average_trade_price=safe_float(values.get(QuoteField.AVERAGE_TRADE_PRICE.value)),
+            cfd_cost=safe_float(values.get(QuoteField.CFD_COST.value)),
+            dts_cost=safe_float(values.get(QuoteField.DTS_COST.value)),
+            market_division=values.get(QuoteField.MARKET_DIVISION.value, ""),
+            raw=values
+        )
+
+
+# ============================================================================
+# 구독 관련
+# ============================================================================
 
 @dataclass
 class Subscription:
     """실시간 구독 정보"""
     grp_no: str  # 그룹 번호
-    items: List[str]  # 종목코드 리스트
+    items: List[str]  # 종목코드 리스트 (주문일 경우 빈 문자열 "")
     types: List[str]  # 실시간 타입 리스트
     refresh: str = "1"  # 기존 등록 유지 여부 (0:새로, 1:유지)
 
 
-@dataclass
-class MessageHandler:
-    """메시지 핸들러"""
-    message_type: str
-    handler: Callable[[Dict[str, Any]], None]
-
+# ============================================================================
+# WebSocket 클라이언트
+# ============================================================================
 
 class WebSocketClient:
     """WebSocket 클라이언트 - 실시간 데이터 스트리밍"""
@@ -259,7 +567,8 @@ class WebSocketClient:
 
         Args:
             items: 종목코드 리스트 (예: ['005930', '000660'])
-            types: 실시간 타입 리스트 (예: ['0B', '0C'])
+                   주문 체결(0A)일 경우 빈 리스트 또는 ['']
+            types: 실시간 타입 리스트 (예: ['0A', '0B'])
             grp_no: 그룹 번호 (None이면 자동 생성)
             refresh: 기존 등록 유지 여부 (0: 새로, 1: 유지)
 
@@ -300,7 +609,7 @@ class WebSocketClient:
             grp_no: 그룹 번호
         """
         message = {
-            'trnm': RealtimeMessageType.DEREG.value,
+            'trnm': RealtimeMessageType.REMOVE.value,
             'grp_no': grp_no,
         }
 
@@ -380,6 +689,10 @@ class WebSocketClient:
         """Async context manager 종료"""
         await self.stop()
 
+
+# ============================================================================
+# Realtime API
+# ============================================================================
 
 class RealtimeAPI:
     """실시간 데이터 API"""

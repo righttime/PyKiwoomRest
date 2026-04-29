@@ -299,7 +299,9 @@ pykiwoomrest/
 
 ### RealtimeAPI - 실시간 데이터 스트리밍
 
-실시간 시세, 장상태 등을 WebSocket을 통해 수신합니다.
+실시간 시세, 장상태, 주문 체결 등을 WebSocket을 통해 수신합니다.
+
+#### 기본 사용법
 
 ```python
 from pykiwoomrest import RealtimeAPI, RealtimeType
@@ -339,17 +341,126 @@ await asyncio.sleep(30)
 await client.stop()
 ```
 
+#### 주문/체결 실시간 수신 (0A)
+
+```python
+from pykiwoomrest import RealtimeAPI, OrderExecutionData, OrderField
+
+realtime = RealtimeAPI(access_token=token, mock=False)
+client = realtime.create_client()
+
+# 주문/체결 핸들러
+def on_order_execution(message):
+    """주문 체결 핸들러"""
+    for data in message.get('data', []):
+        # values 리스트를 딕셔너리로 변환
+        values = {OrderField(field).value: value 
+                 for field, value in zip(OrderField, data.get('values', []))}
+        
+        # 데이터클래스로 변환
+        order_data = OrderExecutionData.from_values(values)
+        
+        print(f"주문 체결: {order_data.stock_name}({order_data.stock_code})")
+        print(f"  상태: {order_data.order_status}")
+        print(f"  주문번호: {order_data.order_no}")
+        print(f"  체결가: {order_data.execution_price:,}")
+        print(f"  체결량: {order_data.execution_qty:,}")
+        
+        if order_data.order_status == "체결":
+            print(f"  체결완료: {order_data.execution_qty}/{order_data.order_qty}")
+        elif order_data.order_status == "취소":
+            print(f"  주문취소됨")
+
+client.register_handler("0A", on_order_execution)
+
+# 주문 체결 구독 (items는 빈 문자열)
+await client.start()
+await client.register(items=[""], types=["0A"], grp_no="0")
+
+await asyncio.sleep(60)  # 1분 동안 수신
+await client.stop()
+```
+
+#### 시세 실시간 수신 (0B)
+
+```python
+from pykiwoomrest import RealtimeAPI, QuoteData, QuoteField
+
+realtime = RealtimeAPI(access_token=token, mock=False)
+client = realtime.create_client()
+
+# 시세 핸들러
+def on_quote(message):
+    """시세 핸들러"""
+    for data in message.get('data', []):
+        # values 리스트를 딕셔너리로 변환
+        values = {QuoteField(field).value: value 
+                 for field, value in zip(QuoteField, data.get('values', []))}
+        
+        # 데이터클래스로 변환
+        quote = QuoteData.from_values(values)
+        
+        print(f"시세: {quote.raw.get(QuoteField.STOCK_NAME.value, '')}({data.get('item')})")
+        print(f"  현재가: {quote.current_price:,}")
+        print(f"  전일대비: {quote.change:+,} ({quote.change_rate:+.2f}%)")
+        print(f"  거래량: {quote.cumulative_volume:,}")
+        print(f"  거래대금: {quote.cumulative_amount:,.0f}")
+        print(f"  매수비율: {quote.buy_ratio:.1f}%")
+
+client.register_handler("0B", on_quote)
+
+# 시세 구독
+await client.start()
+await client.register(items=["005930"], types=["0B"], grp_no="1")
+
+await asyncio.sleep(30)
+await client.stop()
+```
+
 #### 실시간 데이터 타입
 
-| 타입 코드 | 설명 |
-|-----------|------|
-| `0B` | 현재가 |
-| `0C` | 호가 |
-| `0F` | 체결 |
-| `01` | 주식체결 |
-| `02` | 주식호가 |
-| `03` | 주식매매 |
-| `90` | 장상태 |
+| 타입 코드 | 설명 | 데이터클래스 |
+|-----------|------|-------------|
+| `0A` | 주문/체결 | OrderExecutionData |
+| `0B` | 현재가 | QuoteData |
+| `0C` | 호가 | - |
+| `0F` | 체결 | - |
+| `01` | 주식체결 | - |
+| `02` | 주식호가 | - |
+| `03` | 주식매매 | - |
+| `90` | 장상태 | - |
+
+#### 주문/체결 필드 (OrderField)
+
+| 필드 코드 | 한글명 | 설명 |
+|-----------|--------|------|
+| `9201` | 계좌번호 | - |
+| `9203` | 주문번호 | 주문 번호 |
+| `9001` | 종목코드, 업종코드 | - |
+| `913` | 주문상태 | 접수, 체결, 확인, 취소, 거부 |
+| `302` | 종목명 | - |
+| `900` | 주문수량 | - |
+| `901` | 주문가격 | - |
+| `902` | 미체결수량 | - |
+| `910` | 체결가 | - |
+| `911` | 체결량 | - |
+| `907` | 매도수구분 | 1:매도, 2:매수 |
+
+#### 시세 필드 (QuoteField)
+
+| 필드 코드 | 한글명 | 설명 |
+|-----------|--------|------|
+| `10` | 현재가 | - |
+| `11` | 전일대비 | - |
+| `12` | 등락륨 | - |
+| `13` | 누적거래량 | - |
+| `14` | 누적거래대금 | - |
+| `16` | 시가 | - |
+| `17` | 고가 | - |
+| `18` | 저가 | - |
+| `1030` | 매도체결량 | - |
+| `1031` | 매수체결량 | - |
+| `1032` | 매수비율 | - |
 
 #### WebSocketClient 메서드
 
