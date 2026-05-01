@@ -87,7 +87,7 @@ class TradingAPI:
             "trde_tp": trde_tp,
         }
         if price:
-            data["ord_uv"] = str(price)  # 주문단가
+            data["ord_uv"] = str(int(price))  # 주문단가 (정수만 입력 가능)
         logger.warning("📈 매수주문: %s %d주 %s", stk_cd, qty, f"{price}원" if price else "시장가")
         logger.info(f"TradingAPI.buy 호출: endpoint=/api/dostk/ordr, tr_id=kt10000, data={data}")
         result = await self._client.post(
@@ -120,7 +120,7 @@ class TradingAPI:
             "trde_tp": trde_tp,
         }
         if price:
-            data["ord_uv"] = str(price)  # 주문단가
+            data["ord_uv"] = str(int(price))  # 주문단가 (정수만 입력 가능)
         logger.warning("📉 매도주문: %s %d주 %s", stk_cd, qty, f"{price}원" if price else "시장가")
         return await self._client.post(
             "/api/dostk/ordr", tr_id="kt10001", data=data

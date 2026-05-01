@@ -459,8 +459,16 @@ class WebSocketClient:
                     logger.warning("WebSocket 연결 끊김. 재연결 시도...")
                     await asyncio.sleep(1)
                     if await self.connect():
-                        # 재연결 성공 시 기존 구독 재등록
-                        await self._restore_subscriptions()
+                        # 재연결 성공 시 로그인부터 다시
+                        self._login_complete.clear()  # 로그인 상태 초기화
+                        if await self._send_login():
+                            # 로그인 성공 시 기존 구독 재등록
+                            await self._restore_subscriptions()
+                        else:
+                            # 로그인 실패 시 5초 후 재시도
+                            logger.info("5초 후 재시도...")
+                            await asyncio.sleep(5)
+                            continue
                     continue
 
                 # 메시지 수신

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from .client import KiwoomClient
+
+logger = logging.getLogger("pykiwoomrest")
 
 
 class MarketAPI:
@@ -118,12 +121,19 @@ class MarketAPI:
 
     async def quote(self, stk_cd: str) -> dict[str, Any]:
         """ka10004 - 주식호가 (매수/매도 호가)"""
-        return await self._client.get(
-            "/api/dostk/mrkcond", tr_id="ka10004", stk_cd=stk_cd
+        result = await self._client.post(
+            "/api/dostk/mrkcond",
+            tr_id="ka10004",
+            data={"stk_cd": stk_cd}
         )
+        # 디버깅: 응답 구조 확인
+        logger.debug(f"호가 응답 ({stk_cd}): {list(result.keys())}")
+        return result
 
     async def daily_price(self, stk_cd: str, **kwargs: Any) -> dict[str, Any]:
         """ka10086 - 일별주가 (과거 일별 주가)"""
-        return await self._client.get(
-            "/api/dostk/mrkcond", tr_id="ka10086", stk_cd=stk_cd, **kwargs
+        return await self._client.post(
+            "/api/dostk/mrkcond",
+            tr_id="ka10086",
+            data={"stk_cd": stk_cd, **kwargs}
         )
